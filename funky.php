@@ -5,7 +5,7 @@ function doQuery($databasechosen,$sql)
         require_once 'login.php';
 	$database=$databasechosen ;
         $dsn = "mysql:host=127.0.0.1;dbname=$database;charset=utf8mb4";
-        $conn = new PDO($dsn, $username, $password);
+        $conn = new PDO($dsn, $db_username, $db_password);
             $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             echo "<br/>Connected you successfully to the <b>$database</b> database!<br/>" ;
 	    // Prepared statement method

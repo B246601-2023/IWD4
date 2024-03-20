@@ -49,7 +49,7 @@ try {
     foreach($snm as $i => $name) {
         if($sact[$i]) echo "$name ";
     }
-    echo '<br><pre> <form action="p1.php" method="post">';
+    echo '<br><pre> <form action="p11.php" method="post">';
     foreach($snm as $i => $name) {
         echo $name;
         echo ' <input type="checkbox" name="supplier[]" value="';

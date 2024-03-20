@@ -23,16 +23,25 @@ if(isset($_POST['tgval']))
      } 
      printf(" Statistics for %s (%s)<br />\n",$dbfs[$chosen],$nms[$chosen]);
 // THE CONNECTION AND QUERY SECTIONS NEED TO BE MADE TO WORK FOR PHP 8 USING PDO... //
-     //Your mysql and statistics calculation goes here
-     $db_server = mysql_connect($db_hostname,$db_username,$db_password);
-     if(!$db_server) die("Unable to connect to database: " . mysql_error());
-     mysql_select_db($db_database,$db_server) or die ("Unable to select database: " . mysql_error());     
-     $query = sprintf("select AVG(%s), STD(%s) from Compounds",$dbfs[$chosen],$dbfs[$chosen]);
-     $result = mysql_query($query);
-     if(!$result) die("unable to process query: " . mysql_error());
-     $row = mysql_fetch_row($result);
-     printf(" Average %f  Standard Dev %f <br />\n",$row[0],$row[1]);
-   }
+    try {
+        // 使用PDO连接到MySQL数据库
+        $pdo = new PDO("mysql:host=$db_hostname;dbname=$db_database;charset=utf8", $db_username, $db_password);
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+        // 准备并执行查询
+        $query = $pdo->prepare("SELECT AVG(".$dbfs[$chosen]."), STD(".$dbfs[$chosen].") FROM Compounds");
+        $query->execute();
+
+        // 获取并输出结果
+        $row = $query->fetch(PDO::FETCH_NUM);
+        if ($row) {
+            printf(" Average %f  Standard Dev %f <br />\n", $row[0], $row[1]);
+        }
+    } catch (PDOException $e) {
+        die("Unable to connect to database: " . $e->getMessage());
+    }
+}
+
 echo '<form action="p3.php" method="post"><pre>';
 for($j = 0 ; $j <sizeof($dbfs) ; ++$j) {
   if($j == 0) {

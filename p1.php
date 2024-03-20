@@ -8,26 +8,35 @@ echo<<<_HEAD1
 _HEAD1;
 include 'menuf.php';
 // THE CONNECTION AND QUERY SECTIONS NEED TO BE MADE TO WORK FOR PHP 8 USING PDO... //
-$db_server = mysql_connect($db_hostname,$db_username,$db_password);
-if(!$db_server) die("Unable to connect to database: " . mysql_error());
-mysql_select_db($db_database,$db_server) or die ("Unable to select database: " . mysql_error());     
-$query = "select * from Manufacturers";
-$result = mysql_query($query);
-if(!$result) die("unable to process query: " . mysql_error());
-$rows = mysql_num_rows($result);
 
-$smask = $_SESSION['supmask'];
-for($j = 0 ; $j < $rows ; ++$j)
-  {
-    $row = mysql_fetch_row($result);
-    $sid[$j] = $row[0];
-    $snm[$j] = $row[1];
+try {
+    $dsn = "mysql:host=$db_hostname;dbname=$db_database;charset=utf8mb4";
+    $pdo = new PDO($dsn, $db_username, $db_password);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    
+    $query = "SELECT * FROM Manufacturers";
+    $stmt = $pdo->query($query);
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    die("Database error: " . $e->getMessage());
+}
+
+
+$smask = $_SESSION['supmask'] ?? 0;
+$sid = [];
+$snm = [];
+$sact = [];
+
+foreach ($rows as $j => $row) {
+    $sid[$j] = $row['id']; // 假设您的表中有一个'id'字段
+    $snm[$j] = $row['name']; // 假设'name'是您想要显示的字段
     $sact[$j] = 0;
     $tvl = 1 << ($sid[$j] - 1);
-    if($tvl == ($tvl & $smask)) {
-	$sact[$j] = 1;
-      }
-  }
+    if ($tvl == ($tvl & $smask)) {
+        $sact[$j] = 1;
+    }
+}
+
 if(isset($_POST['supplier'])) 
    {
      $supplier = $_POST['supplier'];
