@@ -24,6 +24,9 @@ echo <<<_MENU1
    <a href="https://bioinfmsc8.bio.ed.ac.uk/{$USER}/smile_draw.php"> Draw smile </a>
    </div></td>
   <td bgcolor="#DCEFFE"><div align="center">
+  <a href="https://bioinfmsc8.bio.ed.ac.uk/{$USER}/props_in.php"> Properties </a>
+   </div></td>
+  <td bgcolor="#DCEFFE"><div align="center">
     <a href="https://bioinfmsc8.bio.ed.ac.uk/{$USER}/p5.php"> Exit </a>
     </div></td>
     </tr></table>

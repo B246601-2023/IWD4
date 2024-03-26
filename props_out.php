@@ -1,102 +1,70 @@
 <?php
 session_start();
-require_once 'login.php';
+require_once 'login.php'; // 确保这个文件中定义了数据库连接信息
 include 'redir.php';
-echo <<<_HEAD1
-<html>
-<body>
-_HEAD1;
+
+echo "<html><body>";
 include 'menuf.php';
 
-// THE CONNECTION AND QUERY SECTIONS NEED TO BE MADE TO WORK FOR PHP 8 USING PDO... 
+try {
+    // 使用PDO连接到MySQL数据库
+    $pdo = new PDO("mysql:host=$db_hostname;dbname=$db_database;charset=utf8mb4", $db_username, $db_password);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-$db_server = mysql_connect($db_hostname,$db_username,$db_password);
-if(!$db_server) die("Unable to connect to database: " . mysql_error());
-mysql_select_db($db_database,$db_server) or die ("Unable to select database: " . mysql_error());     
-$query = "select * from Manufacturers";
-$result = mysql_query($query);
-if(!$result) die("unable to process query: " . mysql_error());
-$rows = mysql_num_rows($result);
-$manarray = array();
-for($j = 0 ; $j < $rows ; ++$j)
-  {
-    $row = mysql_fetch_row($result);
-    $manarray[$j] = $row[1];
-  }
-echo <<<_MAIN1
-    <pre>
-This is the initial property retrieval page
+    // 查询Manufacturers表
+    $stmt = $pdo->query("SELECT * FROM Manufacturers");
+    $manarray = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// THE CONNECTION AND QUERY SECTIONS NEED TO BE MADE TO WORK FOR PHP 8 USING PDO... 
+    echo "<pre>This is the initial property retrieval page</pre>";
 
-    </pre>
-_MAIN1;
+    if (!empty($_POST['tgval']) && !empty($_POST['cval'])) {
+        $mychoice = $_POST['tgval'];
+        $myvalue = $_POST['cval'];
 
-// Here we generate our query
-if (($_POST['tgval'] != "") && ($_POST['cval']!="")) {
-    $mychoice=get_post('tgval');
-    $myvalue=get_post('cval');
-    $compsel = "select * from Compounds where ";
-    if($mychoice == "mw") {
-      $compsel = $compsel."( mw > ".($myvalue - 1.0)." and  mw < ".($myvalue + 1.0).")";
+        // 构建查询条件
+        $condition = match ($mychoice) {
+            'mw' => "(mw > :value - 1.0 AND mw < :value + 1.0)",
+            'TPSA' => "(TPSA > :value - 0.1 AND TPSA < :value + 0.1)",
+            'XlogP' => "(XlogP > :value - 0.1 AND XlogP < :value + 0.1)",
+            default => null,
+        };
+
+        if ($condition) {
+            $query = "SELECT * FROM Compounds WHERE " . $condition;
+            $stmt = $pdo->prepare($query);
+            $stmt->execute([':value' => $myvalue]);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            if (count($rows) > 10000) {
+                echo "Too many results ", count($rows), " Max is 10000\n";
+            } else {
+                // 显示结果表格
+                echo "<table border=\"1\"><tr><td>CAT Number</td><td>Manufacturer</td><td>Property</td></tr>";
+    
+                foreach ($rows as $row) {
+                    echo "<tr>";
+                    //printf("<td>%s</td> <td>%s</td>", htmlspecialchars($row['cat_number']), htmlspecialchars($manarray[$row['manufacturer_id'] - 1]['name']));
+                    printf("<td><a href=showprops.php?cid=%s>%s <td>%s</td>", $row['id'],$row['catn'],$manarray[$row['ManuID'] - 1]['name']);
+                    if ($mychoice == 'mw' || $mychoice == 'TPSA' || $mychoice == 'XlogP') {
+                        printf("<td>%s</td> ", htmlspecialchars($row[$mychoice]));
+                    }
+
+                    echo "</tr>";
+                }
+
+                echo "</table>";
+            }
+        } else {
+            echo "No valid query condition.\n";
+        }
+    } else {
+        echo "No Query Given\n";
     }
-    if($mychoice == "TPSA") {
-      $compsel = $compsel."( TPSA > ".($myvalue - 0.1)." and  TPSA < ".($myvalue + 0.1).")";
-    }
-    if($mychoice == "XlogP") {
-      $compsel = $compsel."( XlogP > ".($myvalue - 0.1)." and  XlogP < ".($myvalue + 0.1).")";
-    }
-    echo "<pre>";
-    //    echo $compsel;
-    echo "\n";
-    $result = mysql_query($compsel);
-    if(!$result) die("unable to process query: " . mysql_error());
-    $rows = mysql_num_rows($result);
 
- if($rows > 10000) {
-      echo "Too many results ",$rows," Max is 10000\n";
-    } else  {
-      echo <<<TABLESET_
-<table border="1">
-  <tr>
-    <td>CAT Number</td>
-    <td>Manufacturer</td>
-    <td>Property</td>
-  </tr>
-TABLESET_;
-
-// This is the results processing section, which also needs to be recoded for PHP 8 PDO 
-      for($j = 0 ; $j < $rows ; ++$j)
-  {
-    echo "<tr>";
-    $row = mysql_fetch_row($result);
-    //  Maybe modify this line (see below)
-    printf("<td>%s</td> <td>%s</td>", $row[11],$manarray[$row[10] - 1]);
-    if($mychoice == "mw") {
-       printf("<td>%s</td> ", $row[12]);
-    }
-    if($mychoice == "TPSA") {
-       printf("<td>%s</td> ", $row[13]);
-    }
-    if($mychoice == "XlogP") {
-       printf("<td>%s</td> ", $row[14]);
-    }     
-          echo "</tr>";
-  }
-      echo "</table>";
-    }
-  } else {
-    echo "No Query Given\n";
-  }
-echo "</pre>"; 
-echo <<<_TAIL1
-</body>
-</html>
-_TAIL1;
-
-// Here we use a function
-function get_post($var)
-{
-  return mysql_real_escape_string($_POST[$var]);
+} catch (PDOException $e) {
+    die("Unable to connect to database: " . $e->getMessage());
 }
+
+echo "</body></html>";
 ?>
+
