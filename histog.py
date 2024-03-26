@@ -9,7 +9,7 @@ import numpy as np
 import scipy.stats as sp
 import matplotlib.pyplot as plt
 import io
-con = pymysql.connect(host='127.0.0.1', user='xxxxx', passwd='xxxxx', db='xxxxx')
+con = pymysql.connect(host='127.0.0.1', user='s2495354', passwd='Success2023!', db='s2495354_website')
 cur = con.cursor()
 
 col1 = sys.argv[1]
