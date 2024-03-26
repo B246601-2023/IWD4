@@ -1,5 +1,7 @@
 <?php
 session_start();
+include 'redir.php';
+include 'menuf.php';
 echo <<<_HEAD
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
@@ -38,9 +40,48 @@ Credit to <a target="_blank" href="https://smilesdrawer.surge.sh/use.html">https
 </div>
 _EOF;
 
+require_once 'login.php'; // 保证已经包含了数据库连接信息
+
+$compoundData = []; // 用来存储查询结果的数组
+
+if (isset($_SESSION['id']) && is_array($_SESSION['id'])) {
+    try {
+        $pdo = new PDO("mysql:host=$db_hostname;dbname=$db_database;charset=utf8", $db_username, $db_password);
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+        // 构建IN子句
+        $inQuery = implode(',', array_fill(0, count($_SESSION['id']), '?'));
+        
+        // 准备SQL查询
+        $stmt = $pdo->prepare("SELECT cid, smiles FROM Smiles WHERE cid IN ($inQuery)");
+        
+        // 执行查询
+        $stmt->execute($_SESSION['id']);
+        
+        // 获取查询结果
+        $compoundData = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        die("Unable to connect to database: " . $e->getMessage());
+    }
+}
+if (!empty($compoundData)) {
+  echo "<table border='1'>";
+  echo "<tr><th>Compounds id</th><th>smiles</th></tr>";
+
+  foreach ($compoundData as $compound) {
+      echo "<tr>";
+      echo "<td>" . htmlspecialchars($compound['cid']) . "</td>";
+      echo "<td>" . htmlspecialchars($compound['smiles']) . "</td>";
+      echo "</tr>";
+  }
+
+  echo "</table>";
+}
+
+
+
 echo <<<_TAIL
 </body>
 </html>
 _TAIL;
-session_destroy() ;
 ?>
