@@ -35,8 +35,34 @@ if(isset($_POST['tgval']))
         // 获取并输出结果
         $row = $query->fetch(PDO::FETCH_NUM);
         if ($row) {
-            printf(" Average %f  Standard Dev %f <br />\n", $row[0], $row[1]);
+            printf(" Average %f  Standard Dev %f for all compounds <br />\n", $row[0], $row[1]);
         }
+
+        //尝试访问部分数据
+        if (isset($_SESSION['supmask']) && isset($_SESSION['id'])) {
+            $manuID = $_SESSION['supmask'];
+            $ids = $_SESSION['id'];
+            // 打印session to check
+            //echo "<pre>"; // 使用<pre>标签以便格式化输出
+            //print_r($_SESSION); // 打印所有session数据
+            //echo "</pre>";
+
+            $inQuery = implode(',', array_fill(0, count($ids), '?'));
+            $sql = "SELECT AVG(".$dbfs[$chosen]."), STD(".$dbfs[$chosen].") FROM Compounds WHERE ManuID = ? AND id IN ($inQuery)";
+            $query = $pdo->prepare($sql);
+            $params = array_merge([$manuID], $ids);
+            $query->execute($params);
+    
+            // 获取并输出结果
+            $row = $query->fetch(PDO::FETCH_NUM);
+            if ($row) {
+                printf("Average %f  Standard Dev %f for selected compounds <br />\n", $row[0], $row[1]);
+            }
+        } else {
+            echo "ManuID or id not set in session.";
+        }
+
+        
     } catch (PDOException $e) {
         die("Unable to connect to database: " . $e->getMessage());
     }

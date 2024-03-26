@@ -52,7 +52,7 @@ _MAIN1;
           }
       }
 
-      $query = "SELECT catn FROM Compounds WHERE (" . implode(' AND ', $queryParts) . ") AND " . $mansel;
+      $query = "SELECT id, catn FROM Compounds WHERE (" . implode(' AND ', $queryParts) . ") AND " . $mansel;
       $stmt = $pdo->prepare($query);
       $stmt->execute(array_merge($queryParams, $params));
 
@@ -66,9 +66,23 @@ _MAIN1;
           echo "No results are selected, please change the requirments.";
       }
       else {
-          foreach ($rows as $row) {
-              echo htmlspecialchars($row['catn']), "\n";
-          }
+        echo "<table border='1'>"; // 开始表格并添加边框，以便更容易看到表格的结构
+        echo "<tr><th>ID</th><th>catn</th></tr>"; // 打印表头
+
+        foreach ($rows as $row) {
+            echo "<tr>"; // 开始一行
+            echo "<td>" . htmlspecialchars($row['id']) . "</td>"; // 打印 ID 单元格
+            echo "<td>" . htmlspecialchars($row['catn']) . "</td>"; // 打印 catn 单元格
+            echo "</tr>"; // 结束这一行
+            $_SESSION['id'] = array_map(function($row) { return $row['id']; }, $rows);
+        }
+
+        echo "</table>"; // 结束表格
+        //  foreach ($rows as $row) {
+        //      echo htmlspecialchars($row['catn']), "\n";
+        //      $_SESSION['id'] = array_map(function($row) { return $row['id']; }, $rows);
+        //      $_SESSION['catn_values'] = array_map(function($row) { return $row['catn']; }, $rows);
+        //  }
       }
 
       echo "</pre>";
@@ -76,6 +90,8 @@ _MAIN1;
 } catch (PDOException $e) {
   die("Unable to connect to database: " . $e->getMessage());
 }
+
+
 echo <<<_TAIL1
    <form action="p2.php" method="post"><pre>
        Max Atoms      <input type="text" name="natmax"/>    Min Atoms    <input type="text" name="natmin"/>
