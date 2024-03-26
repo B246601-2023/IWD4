@@ -28,46 +28,68 @@ if(isset($_POST['tgval']))
        if(strcmp($dbfs[$j],$tgval) == 0) $chosen = $j;
      }
 // THE CONNECTION AND QUERY SECTIONS NEED TO BE MADE TO WORK FOR PHP 8 USING PDO... //
+     try {
+          $pdo = new PDO("mysql:host=$db_hostname;dbname=$db_database", $db_username, $db_password);
+          $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+          echo "Connected successfully<br>";
 
-     $db_server = mysql_connect($db_hostname,$db_username,$db_password);
-     if(!$db_server) die("Unable to connect to database: " . mysql_error());
-     mysql_select_db($db_database,$db_server) or die ("Unable to select database: " . mysql_error());
-     $query = "select * from Manufacturers";                     #get manufacturers
-     $result = mysql_query($query);
-     if(!$result) die("unable to process query: " . mysql_error());
-     $rows = mysql_num_rows($result);
+     // Prepare and execute query to get manufacturers
+          $stmt = $pdo->prepare("SELECT * FROM Manufacturers");
+          $stmt->execute();
 
- $smask = $_SESSION['supmask'];
-     $firstmn = False;
-// Figure out the manufacturer clause for the where statement
+     // Fetch all manufacturers
+          $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+          $smask = $_SESSION['supmask'];
+          $firstmn = false;
+          $mansel = "(";
 
-     $mansel = "(";
-     for($j = 0 ; $j < $rows ; ++$j) {              
-      $row = mysql_fetch_row($result);
-      $sid[$j] = $row[0];
-      $snm[$j] = $row[1];
-      $sact[$j] = 0;
-      $tvl = 1 << ($sid[$j] - 1);
-      if($tvl == ($tvl & $smask)) {
-        $sact[$j] = 1;
-        if($firstmn) $mansel = $mansel." or ";
-        $firstmn = True;
-        $mansel = $mansel." (ManuID = ".$sid[$j].")";
-      }
+          foreach ($rows as $row) {
+               $sid = $row['id']; // Assuming 'id' is the column name for manufacturer ID
+               $snm = $row['name']; // Assuming 'name' is the column name for manufacturer name
+               $sact = 0;
+               $tvl = 1 << ($sid - 1);
+
+               if ($tvl == ($tvl & $smask)) {
+                    $sact = 1;
+                if ($firstmn) {
+                    $mansel .= " OR ";
+               }
+               $firstmn = true;
+               $mansel .= "ManuID = $sid";
+               }
+          }
+
+          $mansel .= ")";
+          if (!$firstmn) {
+          // No manufacturer selected
+               $mansel = "(ManuID IS NULL)"; // Adjust as necessary to handle no selection
+          }
+     
+     // Further queries can be executed using $pdo
+     // For example, selecting data based on the manufacturer selection:
+     // $query = "SELECT * FROM SomeTable WHERE $mansel";
+
+     } catch(PDOException $e) {
+          echo "Connection failed: " . $e->getMessage();
      }
-     $mansel = $mansel.")";
 // Prepare command to run external program
 
-     $comtodo = "./histog.py ".$dbfs[$chosen]." \"".$nms[$chosen]."\" \"".$mansel."\"";
+     $comtodo = "python3 histog.py ".$dbfs[$chosen]." \"".$nms[$chosen]."\" \"".$mansel."\"";
+     print($comtodo);
 // Run command and capture output converting to base64 encoding
 
-     $output = base64_encode(shell_exec($comtodo)); 
-     echo <<<_IMGPUT                                                                            
-     <pre>
-     <img src="data:image/png;base64,$output" />                                              
-     </pre>
-_IMGPUT ;
-   }
+     $rawOutput = shell_exec($comtodo);
+     if ($rawOutput !== null) {
+          $output = base64_encode($rawOutput);
+          echo <<< _IMGPUT
+          <pre>
+          <img src="data:image/png;base64,$output" />
+          </pre>
+     _IMGPUT;
+     } else {
+          echo "Error executing command or command produced no output.";
+     }
+}
 // Set up the form
 
 echo '<form action="histogram.php" method="post"><pre>';                                            

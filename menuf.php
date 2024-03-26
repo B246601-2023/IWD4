@@ -18,6 +18,9 @@ echo <<<_MENU1
     <a href="https://bioinfmsc8.bio.ed.ac.uk/${USER}/p4.php"> Correlations </a>
     </div></td>
    <td bgcolor="#DCEFFE"><div align="center">
+   <a href="https://bioinfmsc8.bio.ed.ac.uk/${USER}/histogram.php"> Histogram </a>
+   </div></td>
+  <td bgcolor="#DCEFFE"><div align="center">
     <a href="https://bioinfmsc8.bio.ed.ac.uk/${USER}/p5.php"> Exit </a>
     </div></td>
     </tr></table>

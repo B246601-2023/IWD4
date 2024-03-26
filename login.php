@@ -1,6 +1,6 @@
 <?php //this is the login details required
-$hostname = '127.0.0.1';
-$database = 's2495354_website';
-$username = 's2495354';
-$password = 'Success2023!';
+$db_hostname = '127.0.0.1';
+$db_database = 's2495354_website';
+$db_username = 's2495354';
+$db_password = 'Success2023!';
 ?>
